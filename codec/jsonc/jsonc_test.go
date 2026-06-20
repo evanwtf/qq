@@ -199,6 +199,88 @@ func TestJSONCEmptyComments(t *testing.T) {
 	}
 }
 
+func TestJSONCTrailingCommaObject(t *testing.T) {
+	jsoncData := `{ "a": 1, }`
+	codec := &Codec{}
+	var result map[string]any
+	err := codec.Unmarshal([]byte(jsoncData), &result)
+	if err != nil {
+		t.Fatalf("Failed to unmarshal JSONC with trailing comma: %v", err)
+	}
+	if result["a"].(float64) != 1 {
+		t.Errorf("Expected a=1, got %v", result["a"])
+	}
+}
+
+func TestJSONCTrailingCommaArray(t *testing.T) {
+	jsoncData := `[1, 2, 3,]`
+	codec := &Codec{}
+	var result []any
+	err := codec.Unmarshal([]byte(jsoncData), &result)
+	if err != nil {
+		t.Fatalf("Failed to unmarshal JSONC array with trailing comma: %v", err)
+	}
+	if len(result) != 3 {
+		t.Errorf("Expected 3 elements, got %d", len(result))
+	}
+}
+
+func TestJSONCTrailingCommaWithComments(t *testing.T) {
+	jsoncData := `{
+		// VS Code style config
+		"editor.fontSize": 14,
+		"editor.tabSize": 2, // trailing comma here
+	}`
+	codec := &Codec{}
+	var result map[string]any
+	err := codec.Unmarshal([]byte(jsoncData), &result)
+	if err != nil {
+		t.Fatalf("Failed to unmarshal JSONC with trailing comma + comments: %v", err)
+	}
+	if result["editor.fontSize"].(float64) != 14 {
+		t.Errorf("Expected fontSize=14, got %v", result["editor.fontSize"])
+	}
+	if result["editor.tabSize"].(float64) != 2 {
+		t.Errorf("Expected tabSize=2, got %v", result["editor.tabSize"])
+	}
+}
+
+func TestJSONCTrailingCommaPreservesCommasInStrings(t *testing.T) {
+	jsoncData := `{ "a": "x,", }`
+	codec := &Codec{}
+	var result map[string]any
+	err := codec.Unmarshal([]byte(jsoncData), &result)
+	if err != nil {
+		t.Fatalf("Failed to unmarshal: %v", err)
+	}
+	if result["a"] != "x," {
+		t.Errorf("Expected a='x,', got %v", result["a"])
+	}
+}
+
+func TestJSONCTrailingCommaNestedStructures(t *testing.T) {
+	jsoncData := `{
+		"list": [1, 2,],
+		"nested": {
+			"key": "val",
+		},
+	}`
+	codec := &Codec{}
+	var result map[string]any
+	err := codec.Unmarshal([]byte(jsoncData), &result)
+	if err != nil {
+		t.Fatalf("Failed to unmarshal nested trailing commas: %v", err)
+	}
+	list := result["list"].([]any)
+	if len(list) != 2 {
+		t.Errorf("Expected 2 list elements, got %d", len(list))
+	}
+	nested := result["nested"].(map[string]any)
+	if nested["key"] != "val" {
+		t.Errorf("Expected nested key='val', got %v", nested["key"])
+	}
+}
+
 func TestJSONCEscapedQuotes(t *testing.T) {
 	jsoncData := `{
 		// Test escaped quotes

@@ -12,7 +12,7 @@
   /* phone numbers */
   "phone": {
     "home": "555-1234",
-    "work": "555-5678"
+    "work": "555-5678",
   },
-  "active": true
+  "active": true,
 }
