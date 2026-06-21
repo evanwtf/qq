@@ -16,10 +16,10 @@ func (c *Codec) Unmarshal(data []byte, v interface{}) error {
 		return errors.New("v cannot be nil")
 	}
 
-	// Strip comments from JSONC
+	// Strip comments, then trailing commas (VS Code / JWCC dialect)
 	cleaned := c.stripComments(string(data))
+	cleaned = c.stripTrailingCommas(cleaned)
 
-	// Parse as regular JSON
 	return json.Unmarshal([]byte(cleaned), v)
 }
 
@@ -105,6 +105,64 @@ func (c *Codec) stripComments(input string) string {
 		// Regular character
 		result.WriteByte(ch)
 		i++
+	}
+
+	return result.String()
+}
+
+// stripTrailingCommas removes commas that appear before } or ] (with only
+// whitespace in between), which is the VS Code / JWCC dialect of JSONC.
+// String contents are left untouched.
+func (c *Codec) stripTrailingCommas(input string) string {
+	var result strings.Builder
+	result.Grow(len(input))
+	inString := false
+	escaped := false
+
+	for i := 0; i < len(input); i++ {
+		ch := input[i]
+
+		if inString && escaped {
+			result.WriteByte(ch)
+			escaped = false
+			continue
+		}
+		if inString && ch == '\\' {
+			result.WriteByte(ch)
+			escaped = true
+			continue
+		}
+		if ch == '"' && !escaped {
+			inString = !inString
+			result.WriteByte(ch)
+			continue
+		}
+		if inString {
+			result.WriteByte(ch)
+			continue
+		}
+
+		if ch == ',' {
+			// Look ahead: if next non-whitespace is } or ], skip this comma
+			trailing := true
+			for j := i + 1; j < len(input); j++ {
+				c := input[j]
+				if c == ' ' || c == '\t' || c == '\n' || c == '\r' {
+					continue
+				}
+				if c == '}' || c == ']' {
+					trailing = true
+				} else {
+					trailing = false
+				}
+				break
+			}
+			if trailing {
+				continue
+			}
+		}
+
+		result.WriteByte(ch)
 	}
 
 	return result.String()
