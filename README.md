@@ -9,6 +9,24 @@
 
 `qq` is a multi-format transcoder and query tool powered by `jq` syntax. It lets you query and convert between configuration and data formats without needing separate tools for each one. Single binary, no persistent state — reads stdin or files, writes to stdout.
 
+> **About this fork:** This fork exists specifically to support the JSONC dialect with
+> **trailing commas** (the [JWCC](https://nigeltao.github.io/blog/2021/json-with-commas-and-comments.html)
+> / VS Code dialect). The upstream `jsonc` codec rejected trailing commas, which broke
+> real-world config files such as `cmux.json` (from [cmux](https://github.com/manaflow-ai/cmux)).
+> Those files now parse cleanly:
+>
+> ```sh
+> $ qq -i jsonc . ~/.config/cmux/cmux.json
+> {
+>   "$schema": "https://raw.githubusercontent.com/manaflow-ai/cmux/main/web/data/cmux.schema.json",
+>   "app": {
+>     "defaultWorkspacePath": "~",
+>     "restorePreviousSession": false
+>   },
+>   "schemaVersion": 1
+> }
+> ```
+
 ## Supported Formats
 
 **Read/write:** `.json`, `.yaml`/`.yml`, `.toml`, `.xml`, `.hcl`/`.tf`, `.csv`, `.tsv`, `.ini`, `.gron`, `.html`, `.jsonl`/`.ndjson`/`.jsonlines`, `.jsonc`, `.parquet`, `.msgpack`/`.mpk`, `.cbor`, `.avro`, `.base64`/`.b64`, `.txt`/`.text`, `.line`, `.env`, `.properties`
